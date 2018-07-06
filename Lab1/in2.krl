@@ -30,7 +30,7 @@ A first ruleset for the Quickstart
   rule hello_monkey {
     select when echo monkey
     pre {
-         sayHelloToThisPerson = event:attr("name").defaultsTo("Monkey").klog("debug output:");
+         sayHelloToThisPerson = (event:attr("name") => event:attr("name") | "Monkey").klog("debug output:");
     }
     send_directive("say", {"message": "Hello " + sayHelloToThisPerson})
   }
