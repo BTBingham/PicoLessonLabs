@@ -11,7 +11,15 @@ A first ruleset for the Quickstart
   }
   
   global {
-    get_sms = function(filter) {
+    get_sms_messages = function(filter) {
+
+      http:get('https://api.twilio.com/2010-04-01/Accounts/AC6ad23f68c379db6d003b555e90c6d56d/Messages.json', {
+        'auth': {
+        'user': 'username',
+        'pass': 'password',
+        'sendImmediately': false
+  }
+})
       msg = "there should be texts here";
       msg
     }
@@ -23,7 +31,7 @@ A first ruleset for the Quickstart
   
   rule hello_sms {
     select when sms hello
-    send_directive("say", {"something": "Hello World"})
+    send_directive("hello_sms", {"message": "Sent sms to my Cell"})
   }
   
   
