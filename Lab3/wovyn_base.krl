@@ -4,11 +4,11 @@ ruleset wovyn_base {
   }
   global {
     
-    temperature_threshold = 75.0
+    temperature_threshold = 85.0
     
     spamBrandon = defaction() {
       blah = temperature_threshold.klog("sent sms");
-      event:send({"eci":"Fz6jvdGpe878VmzvXn6nne", "eid":"666", "domain":"sms", "type":"hello", "to":"+14809079989", "from":"+14805685187", "message":"It's hot time to spam your number every 10 seconds"}, host="http://localhost:8080")
+      event:send({"eci":"Fz6jvdGpe878VmzvXn6nne", "eid":"666", "domain":"sms", "type":"hello", "attrs" : {"to":"+14809079989", "from":"+14805685187", "message":"It's hot time to spam your number every 10 seconds"}}, host="http://localhost:8080")
     }
     
     __testing = { "queries":
@@ -63,7 +63,7 @@ ruleset wovyn_base {
       bluh = event:attr("temperature").klog("temp: ");
     }
     
-    //spamBrandon()
+    spamBrandon()
     
     
   }
