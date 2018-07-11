@@ -1,0 +1,120 @@
+<html>
+
+<head>
+    <script type="text/javascript" src="date.js"></script>
+    <style>
+        body {
+            background: url(https://d2v9y0dukr6mq2.cloudfront.net/video/thumbnail/H8WuRINimqur8ud/technology-background-gear_rhfg-imn_thumbnail-full01.png) no-repeat center center fixed;
+            -webkit-background-size: cover;
+            -moz-background-size: cover;
+            -o-background-size: cover;
+            background-size: cover;
+        }
+
+        #currentTempDisplay {
+            position: absolute;
+            width: 10%;
+            height: 10%;
+            top: 20px;
+            left: 20px;
+            background: rgba(170, 22, 22, 0.8);
+            border-radius: 5px;
+        }
+
+        #temperatureDisplay {
+            position: absolute;
+            /* width: 10%; */
+            /* height: 10%; */
+            padding: 30px;
+            top: 10%;
+            left: 30%;
+            background: rgba(255, 255, 255, 0.411);
+            border-radius: 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 150%;
+            line-height: 30px;
+        }
+    </style>
+</head>
+
+
+<div id="currentTempDisplay"></div>
+
+
+<div id="temperatureDisplay">
+    <button onclick="updateTemps()">
+        click to update temp data
+    </button>
+    temp data goes here
+</div>
+
+
+
+
+
+
+
+<script>
+
+    var highTemp = 84.0;
+    var lowTemp = 75.0;
+
+    function updateTemps() {
+        var url = "http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/temperature_store/temperatures";
+        httpGetAsync(url, displayTemps);
+
+
+    }
+
+    function displayTemps(jsonString) {
+        var tempArray = JSON.parse(jsonString);
+
+        var htmlCode = "";
+        var count = 0;
+        for (var i = tempArray.length - 1; i >= 0; i--) {
+
+            var dtstr = tempArray[i][0].replace(/\D/g, " ");
+            var dtcomps = dtstr.split(" ");
+
+            // modify month between 1 based ISO 8601 and zero based Date
+            dtcomps[1]--;
+
+            var convdt = new Date(Date.UTC(dtcomps[0], dtcomps[1], dtcomps[2], dtcomps[3], dtcomps[4], dtcomps[5]));
+
+            htmlCode += "<br>" + tempArray[i][1] + " - " + formatAMPM(convdt);
+            if (count == 15) break;
+            count++;
+        }
+        htmlCode += "";
+
+        document.getElementById("temperatureDisplay").innerHTML = htmlCode;
+    }
+
+    function formatAMPM(date) {
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var seconds = date.getSeconds();
+        var ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+        var strTime = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+        return strTime;
+    }
+
+
+    function httpGetAsync(theUrl, callback) {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                callback(xmlHttp.responseText);
+        }
+        xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+        xmlHttp.send(null);
+    }
+
+
+</script>
+
+</html>
