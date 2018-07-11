@@ -1,7 +1,6 @@
 <html>
 
 <head>
-    <script type="text/javascript" src="date.js"></script>
     <style>
         body {
             background: url(https://d2v9y0dukr6mq2.cloudfront.net/video/thumbnail/H8WuRINimqur8ud/technology-background-gear_rhfg-imn_thumbnail-full01.png) no-repeat center center fixed;
@@ -13,21 +12,26 @@
 
         #currentTempDisplay {
             position: absolute;
-            width: 10%;
-            height: 10%;
+            width: 19%;
+            height: 5%;
             top: 20px;
             left: 20px;
             background: rgba(170, 22, 22, 0.8);
             border-radius: 5px;
+            padding: 30px;
+            font-size: 220%;
+            text-align: center;
+            color: rgb(224, 224, 224);
         }
 
         #temperatureDisplay {
             position: absolute;
-            /* width: 10%; */
+            width: 19%;
             /* height: 10%; */
+            text-align: center;
             padding: 30px;
-            top: 10%;
-            left: 30%;
+            top: 16.5%;
+            left: 20px;
             background: rgba(255, 255, 255, 0.411);
             border-radius: 10px;
             font-family: Arial, Helvetica, sans-serif;
@@ -37,27 +41,34 @@
     </style>
 </head>
 
-
-<div id="currentTempDisplay"></div>
-
-
-<div id="temperatureDisplay">
-    <button onclick="updateTemps()">
-        click to update temp data
-    </button>
-    temp data goes here
-</div>
+<body onload="updateTemps();">
 
 
+    <div id="currentTempDisplay">100.9</div>
 
 
+    <div id="temperatureDisplay">
+        <button onclick="updateTemps()">
+            click to update temp data
+        </button>
+        temp data goes here
+    </div>
+
+
+
+</body>
 
 
 
 <script>
 
-    var highTemp = 84.0;
-    var lowTemp = 75.0;
+    window.setInterval(function () {
+        /// call your function here
+        updateTemps();
+    }, 4000);
+
+    var highTemp = 82.0;
+    var lowTemp = 78.0;
 
     function updateTemps() {
         var url = "http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/temperature_store/temperatures";
@@ -71,6 +82,7 @@
 
         var htmlCode = "";
         var count = 0;
+        var currentTemp;
         for (var i = tempArray.length - 1; i >= 0; i--) {
 
             var dtstr = tempArray[i][0].replace(/\D/g, " ");
@@ -80,14 +92,36 @@
             dtcomps[1]--;
 
             var convdt = new Date(Date.UTC(dtcomps[0], dtcomps[1], dtcomps[2], dtcomps[3], dtcomps[4], dtcomps[5]));
+            if (i == tempArray.length - 1) {
+                htmlCode += tempArray[i][1] + " - " + formatAMPM(convdt);
+                currentTemp = tempArray[i][1];
+            }
+            else {
+                htmlCode += "<br>" + tempArray[i][1] + " - " + formatAMPM(convdt);
+            }
 
-            htmlCode += "<br>" + tempArray[i][1] + " - " + formatAMPM(convdt);
             if (count == 15) break;
             count++;
         }
-        htmlCode += "";
 
         document.getElementById("temperatureDisplay").innerHTML = htmlCode;
+
+        // update current temp
+        document.getElementById("currentTempDisplay").innerText = currentTemp;
+
+        var red = ((highTemp - currentTemp)/(highTemp-lowTemp)) * 255;
+        red = Math.floor(red);
+        var blue = 255 - red;
+
+        document.getElementById("currentTempDisplay").style.background = rgb(red,0,blue);
+
+    }
+
+    function rgb(r, g, b) {
+        r = Math.floor(r);
+        g = Math.floor(g);
+        b = Math.floor(b);
+        return ["rgba(", r, ",", g, ",", b, ", 0.8)"].join("");
     }
 
     function formatAMPM(date) {
