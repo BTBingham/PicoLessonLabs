@@ -112,6 +112,8 @@
     var highTemp = 40.0;
     var lowTemp = 100.0;
 
+    var highTempThreshold = 100;
+
     function saveSettings() {
         var url = "http://localhost:8080/sky/event/CfNFwKX2cjcpNP6ehMjA2t/1337/sensor/profile_updated";
 
@@ -188,6 +190,7 @@
 
     function updateThreshold(data) {
         document.getElementById("in_threshold").value = data.replace(/['"]+/g, '');
+        highTempThreshold = data.replace(/['"]+/g, '');
     }
 
     function updateSmsRecipient(data) {
@@ -218,14 +221,21 @@
             // modify month between 1 based ISO 8601 and zero based Date
             dtcomps[1]--;
 
+            var generatedLine = "";
+
             var convdt = new Date(Date.UTC(dtcomps[0], dtcomps[1], dtcomps[2], dtcomps[3], dtcomps[4], dtcomps[5]));
             if (i == tempArray.length - 1) {
-                htmlCode += tempArray[i][1] + " - " + formatAMPM(convdt);
+                generatedLine += tempArray[i][1] + " - " + formatAMPM(convdt);
                 currentTemp = tempArray[i][1];
             }
             else {
-                htmlCode += "<br>" + tempArray[i][1] + " - " + formatAMPM(convdt);
+                generatedLine += "<br>" + tempArray[i][1] + " - " + formatAMPM(convdt);
             }
+            if (tempArray[i][1] > highTempThreshold) {
+                generatedLine = "<span style='color: red'>" + generatedLine + "</span>";
+            }
+
+            htmlCode += generatedLine;
 
             if (count == 15) break;
             count++;
