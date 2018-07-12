@@ -42,7 +42,7 @@
         #configureSensorWindow {
             position: absolute;
             width: 30%;
-            height: 40%;
+            height: 17%;
             text-align: center;
             padding: 30px;
             top: 20px;
@@ -54,10 +54,15 @@
             line-height: 30px;
             color: rgb(207, 207, 207);
         }
+
+        input {
+            background-color: rgb(68, 68, 68);
+            color: white;
+        }
     </style>
 </head>
 
-<body onload="updateTemps();">
+<body onload="initializePage();">
 
 
     <div id="currentTempDisplay">100.9</div>
@@ -81,7 +86,13 @@
             <input type="text" name="Location" id="in_location">
             <br> Temp Threshold:
             <input type="text" name="High Temp Threshold" id="in_threshold">
+            <br> SMS recipient:
+            <input type="text" name="SMS recipient" id="in_recipient">
         </form>
+
+        <span id="configSaveToast" style="color: greenyellow; font-size: 50%;"></span>
+
+
     </div>
 
 
@@ -98,8 +109,8 @@
         updateTemps();
     }, 4000);
 
-    var highTemp = 80.0;
-    var lowTemp = 78.0;
+    var highTemp = 40.0;
+    var lowTemp = 100.0;
 
     function saveSettings() {
         var url = "http://localhost:8080/sky/event/CfNFwKX2cjcpNP6ehMjA2t/1337/sensor/profile_updated";
@@ -107,24 +118,44 @@
         var in_deviceName = document.getElementById("in_deviceName").value;
         var in_location = document.getElementById("in_location").value;
         var in_threshold = document.getElementById("in_threshold").value;
+        var in_recipient = document.getElementById("in_recipient").value;
         var attrs = [];
         if (in_deviceName != "") attrs.push("new_deviceName=" + in_deviceName);
         if (in_location != "") attrs.push("new_location=" + in_location);
         if (in_threshold != "") attrs.push("new_threshold=" + in_threshold);
+        if (in_recipient != "") attrs.push("new_recipient=" + in_recipient);
 
-        for (var i = 0; i < attrs.length; i++)
-        {
-            if (i==0)
-            {
+        for (var i = 0; i < attrs.length; i++) {
+            if (i == 0) {
                 url += "?" + attrs[i];
             }
-            else
-            {
+            else {
                 url += "&" + attrs[i];
             }
         }
 
         var xmlHttp = new XMLHttpRequest();
+
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                updateConfigDisplay(); // callback function
+                document.getElementById("configSaveToast").innerHTML = "<em>Changes Saved!</em>"; // toast them
+                document.getElementById("configSaveToast").style.opacity = 1.0;
+                setTimeout(function () { // start a delay
+                    var fade = document.getElementById("configSaveToast"); // get required element
+                    fade.style.opacity = 1; // set opacity for the element to 1
+                    var timerId = setInterval(function () { // start interval loop
+                        var opacity = fade.style.opacity; // get current opacity
+                        if (opacity <= 0) { // check if its 0 yet
+                            clearInterval(timerId); // if so, exit from interval loop
+                        } else {
+                            fade.style.opacity = opacity - 0.08; // else remove 0.05 from opacity
+                        }
+                    }, 100); // run every 0.1 second
+                }, 3000); // wait to run after 5 seconds
+            }
+        }
+
         xmlHttp.open("POST", url, true); // true for asynchronous
 
         xmlHttp.send(null); // null is replaced with postData if you want
@@ -134,7 +165,34 @@
 
 
 
+    function initializePage() {
+        updateTemps();
+        updateConfigDisplay();
+    }
 
+
+    function updateConfigDisplay() {
+        httpGetAsync("http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/sensor_profile/get_deviceName", updateDeviceName);
+        httpGetAsync("http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/sensor_profile/get_location", updateLocation);
+        httpGetAsync("http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/sensor_profile/get_threshold", updateThreshold);
+        httpGetAsync("http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/sensor_profile/get_sms_recipient", updateSmsRecipient);
+    }
+
+    function updateDeviceName(data) {
+        document.getElementById("in_deviceName").value = data.replace(/['"]+/g, '');
+    }
+
+    function updateLocation(data) {
+        document.getElementById("in_location").value = data.replace(/['"]+/g, '');
+    }
+
+    function updateThreshold(data) {
+        document.getElementById("in_threshold").value = data.replace(/['"]+/g, '');
+    }
+
+    function updateSmsRecipient(data) {
+        document.getElementById("in_recipient").value = data.replace(/['"]+/g, '');
+    }
 
     function updateTemps() {
         var url = "http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/temperature_store/temperatures";
@@ -149,6 +207,10 @@
         var count = 0;
         var currentTemp;
         for (var i = tempArray.length - 1; i >= 0; i--) {
+
+            if (tempArray[i][1] > highTemp) highTemp = tempArray[i][1];
+            if (tempArray[i][1] < lowTemp) lowTemp = tempArray[i][1];
+
 
             var dtstr = tempArray[i][0].replace(/\D/g, " ");
             var dtcomps = dtstr.split(" ");
@@ -173,6 +235,7 @@
 
         // update current temp
         document.getElementById("currentTempDisplay").innerText = currentTemp;
+
 
 
 
