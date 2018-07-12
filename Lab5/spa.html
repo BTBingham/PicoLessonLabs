@@ -38,6 +38,22 @@
             font-size: 150%;
             line-height: 30px;
         }
+
+        #configureSensorWindow {
+            position: absolute;
+            width: 30%;
+            height: 40%;
+            text-align: center;
+            padding: 30px;
+            top: 20px;
+            left: 40%;
+            background: rgba(65, 65, 65, 0.6);
+            border-radius: 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 150%;
+            line-height: 30px;
+            color: rgb(207, 207, 207);
+        }
     </style>
 </head>
 
@@ -48,12 +64,25 @@
 
 
     <div id="temperatureDisplay">
-        <button onclick="updateTemps()">
+        <!-- <button onclick="updateTemps()">
             click to update temp data
-        </button>
+        </button> -->
         temp data goes here
     </div>
 
+    <div id="configureSensorWindow">
+        Sensor Configuration
+        <button onclick="saveSettings()">Save Settings</button>
+        <br>
+        <form>
+            <br> Device Name:
+            <input type="text" name="Device Name" id="in_deviceName">
+            <br> Location:
+            <input type="text" name="Location" id="in_location">
+            <br> Temp Threshold:
+            <input type="text" name="High Temp Threshold" id="in_threshold">
+        </form>
+    </div>
 
 
 </body>
@@ -62,18 +91,54 @@
 
 <script>
 
+
+
     window.setInterval(function () {
         /// call your function here
         updateTemps();
     }, 4000);
 
-    var highTemp = 82.0;
+    var highTemp = 80.0;
     var lowTemp = 78.0;
+
+    function saveSettings() {
+        var url = "http://localhost:8080/sky/event/CfNFwKX2cjcpNP6ehMjA2t/1337/sensor/profile_updated";
+
+        var in_deviceName = document.getElementById("in_deviceName").value;
+        var in_location = document.getElementById("in_location").value;
+        var in_threshold = document.getElementById("in_threshold").value;
+        var attrs = [];
+        if (in_deviceName != "") attrs.push("new_deviceName=" + in_deviceName);
+        if (in_location != "") attrs.push("new_location=" + in_location);
+        if (in_threshold != "") attrs.push("new_threshold=" + in_threshold);
+
+        for (var i = 0; i < attrs.length; i++)
+        {
+            if (i==0)
+            {
+                url += "?" + attrs[i];
+            }
+            else
+            {
+                url += "&" + attrs[i];
+            }
+        }
+
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open("POST", url, true); // true for asynchronous
+
+        xmlHttp.send(null); // null is replaced with postData if you want
+
+
+    }
+
+
+
+
 
     function updateTemps() {
         var url = "http://localhost:8080/sky/cloud/CfNFwKX2cjcpNP6ehMjA2t/temperature_store/temperatures";
         httpGetAsync(url, displayTemps);
-
 
     }
 
@@ -109,11 +174,13 @@
         // update current temp
         document.getElementById("currentTempDisplay").innerText = currentTemp;
 
-        var red = ((highTemp - currentTemp)/(highTemp-lowTemp)) * 255;
+
+
+        var red = ((highTemp - currentTemp) / (highTemp - lowTemp)) * 255;
         red = Math.floor(red);
         var blue = 255 - red;
 
-        document.getElementById("currentTempDisplay").style.background = rgb(red,0,blue);
+        document.getElementById("currentTempDisplay").style.background = rgb(red, 0, blue);
 
     }
 
