@@ -73,17 +73,16 @@ ruleset wovyn_base {
   
   rule threshold_notification {
     select when wovyn threshold_violation
-    
+    foreach subscription:established().filter(function(v){v{"Rx_role"} == "Sensor Boss"})
+                                      .map(function(v){v{"Tx"}}) setting (x)
     pre {
       blah = event:attr("timestamp").klog ("time: ");
       bluh = event:attr("temperature").klog("temp: ");
       
-      Tx_array = subscription:established().filter(function(v){v{"Rx_role"} == "Sensor Boss"})
-                                      .map(function(v){v{"Tx"}});
     }
     
     //spamBrandon()
-    event:send({"eci":Tx_array[0], "eid":"666", "domain":"sms", "type":"hello", "attrs" : {"to":profile:get_sms_recipient(), "from":"+14805685187", "message":"It's hot time to spam your number every 10 seconds"}}, host="http://localhost:8080");
+    event:send({"eci":x, "eid":"666", "domain":"sms", "type":"hello", "attrs" : {"to":profile:get_sms_recipient(), "from":"+14805685187", "message":"It's hot time to spam your number every 10 seconds"}}, host="http://localhost:8080");
           
     //always {                           
     //  Tx_array.map( function(x) {
