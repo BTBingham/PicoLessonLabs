@@ -1,0 +1,13 @@
+[Unit]
+Description=PicoEngine Daemon
+
+[Service]
+ExecStart=/bin/sh -c 'echo | /usr/local/bin/npm start --prefix /home/pi/Desktop/Github/NPE | /usr/bin/pipe-to-browser'
+StandardOutput=null
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=PicoEngine.service
+
+
