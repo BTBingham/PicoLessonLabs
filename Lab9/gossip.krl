@@ -4,7 +4,7 @@ ruleset gossip {
     use module io.picolabs.subscription alias subscription
     
     shares __testing, peer, getPeer, debugSeenMessages, debugMySeenMessages, debugRumorMessages, debugTxToOriginId, prepareMessage, needSomething
-    , theyHaveSeenLessThanMe, theyNeedMessage, prepareRumors
+    , theyHaveSeenLessThanMe, theyNeedMessage, prepareRumors, highestSequence
   }
   global {
     
@@ -19,6 +19,7 @@ ruleset gossip {
       , { "name": "debugTxToOriginId"}
       , { "name": "prepareMessage"}
       , { "name": "needSomething", "args":["originID"]}
+      , { "name": "highestSequence", "args":["subscriber"]}
       , { "name": "prepareRumors", "args":["subscriber"]}
       , { "name": "theyHaveSeenLessThanMe", "args":["myKey","seenMessages","mySeenMessages"]}
       , { "name": "theyNeedMessage", "args":["subscriber","rumor"]}
@@ -118,6 +119,13 @@ ruleset gossip {
       result
     }
     
+    prepareRumor = function(subscriber) {
+      result = prepareRumors(subscriber);
+      rand = random:integer(0,result.length());
+      result = result[rand];
+      result
+    }
+    
     prepareMessage = function(subscriber) {
       // return a message to propagate to a SPECIFIC neighbor
       // randomly choose either a seen or rumor message type
@@ -128,7 +136,7 @@ ruleset gossip {
       message = {};
       rand = random:integer(0,1);
       message["type"] = (rand) => "seen" | "rumor";
-      message["message"] = (rand) => ent:mySeenMessages | prepareRumors(subscriber);
+      message["message"] = (rand) => ent:mySeenMessages | prepareRumor(subscriber);
       
       //message["type"] = "seen";
       //message["message"] = ent:mySeenMessages;
@@ -137,8 +145,10 @@ ruleset gossip {
       message
     }
     
-    update = function() {
+    update = function(subscriber, rumors) {
       // update the state of who has seen what
+      //update the seen since we will have the subscriber and the rumors they were sent
+      
     }
     
     send = defaction(subscriber, message) {
@@ -150,9 +160,25 @@ ruleset gossip {
       }});
     }
     
+    next = function (a,v) {
+      result = (v == a + 1) => v | a;
+      result
+    }
+    
+    // tested works
+    highestSequence = function(subscriber) {
+      rumors = ent:rumorMessages.filter(function(x){
+        (x["messageID"] == subscriber)
+      });
+      currentSeq = 0;
+      rumors = rumors.map(function(x){
+        x["sequence"]
+      });
+      rumors = rumors.sort("numeric");
+      rumors = (rumors.head() == 0 && rumors.length() > 0) => rumors.reduce(next,0) | null;
+      rumors
+    }
   }
-
-
 
   rule gossip_heartbeat {
     select when gossip heartbeat
@@ -211,18 +237,6 @@ ruleset gossip {
     }
   }
 
-
-
-  rule send_gossip_message {
-    select when gossip send_message
-    
-    
-    fired {
-      raise gossip event rumor
-    }
-    
-  }
-
   rule rumor_event {
     select when gossip rumor
       foreach event:attr("message").decode() setting (x)
@@ -241,11 +255,13 @@ ruleset gossip {
       blah = message.klog("message");
       
       temp = ent:mySeenMessages.klog("mySeenMessages");
-      temp[message["messageID"]] = ((ent:mySeenMessages[message["messageID"]] == null) && (message["sequence"] == 0)) => 0 |
-      (ent:mySeenMessages[message["messageID"]] == (message["sequence"] - 1)) => message["sequence"]|
-      null;
-      blah = (ent:mySeenMessages[message["messageID"]] == (message["sequence"] - 1)).klog("seenEntry");
-      ent:mySeenMessages := temp if (temp[message["messageID"]] != null);
+      highest = highestSequence(message["messageID"]);
+      temp[message["messageID"]] = highest;
+      //temp[message["messageID"]] = ((ent:mySeenMessages[message["messageID"]] == null) && (message["sequence"] == 0)) => 0 |
+      //(ent:mySeenMessages[message["messageID"]] == (message["sequence"] - 1)) => message["sequence"]|
+      //null;
+      //blah = (ent:mySeenMessages[message["messageID"]] == (message["sequence"] - 1)).klog("seenEntry");
+      ent:mySeenMessages := temp if (highest != null);
     }
   }
 
@@ -264,6 +280,18 @@ ruleset gossip {
       temp = ent:seenMessages;
       temp[originID] = seenArray;
       ent:seenMessages := temp.klog("seen Messages");
+      
+      message = {};
+      message["type"] = "rumor";
+      rumors = prepareRumors(subscriber);
+      message["message"] = rumors;
+      send(originID, message) if (rumors.length() != 0);
+      
+      update(originID, rumors);
+      //message["type"] = "seen";
+      //message["message"] = ent:mySeenMessages;
+      //message["type"] = "rumor";
+      //message["message"] = prepareRumors(subscriber);
     }
   }
   
